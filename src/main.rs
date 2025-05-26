@@ -1,5 +1,8 @@
+mod utils;
+
 use std::env;
 use std::process::exit;
+use utils::parse_number;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -9,16 +12,36 @@ fn main() {
         exit(1);
     }
 
-    let num: i32 = match args[1].parse() {
-        Ok(num) => num,
-        Err(_) => {
-            eprintln!("{}: argument is not a valid integer", args[0]);
-            exit(1);
-        }
-    };
+    let mut p = args[1].as_str();
+
+    let (num, rest) = parse_number(&p);
+    p = rest;
 
     println!("  .global main");
     println!("main:");
     println!("  mov ${}, %rax", num);
+
+    while !p.is_empty() {
+        let c = p.chars().next().unwrap();
+        match c {
+            '+' => {
+                p = &p[1..];
+                let (num, rest) = parse_number(p);
+                println!("  add ${}, %rax", num);
+                p = rest;
+            }
+            '-' => {
+                p = &p[1..];
+                let (num, rest) = parse_number(p);
+                println!("  sub ${}, %rax", num);
+                p = rest;
+            }
+            _ => {
+                eprintln!("unexpected character: '{}'", c);
+                exit(1);
+            }
+        }
+    }
+
     println!("  ret");
 }
