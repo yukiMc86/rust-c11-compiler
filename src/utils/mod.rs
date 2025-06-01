@@ -1,10 +1,8 @@
-/// Parses an integer at the beginning of the string and returns (value, remaining string)
-///
-/// If the first character is not a digit, returns 0
-pub fn parse_number(s: &str) -> (i32, &str) {
-    let s = s.trim_start();
-    let mut chars = s.chars();
+use crate::CURRENT_INPUT;
+use std::process::exit;
 
+pub fn parse_number(s: &str) -> (i32, usize) {
+    let mut chars = s.chars();
     let mut len = 0;
 
     while let Some(c) = chars.next() {
@@ -15,8 +13,17 @@ pub fn parse_number(s: &str) -> (i32, &str) {
         }
     }
 
-    match len {
-        0 => (0, s),
-        _ => (s[..len].parse().unwrap(), &s[len..]),
+    if len == 0 {
+        (0, 0)
+    } else {
+        (s[..len].parse().unwrap(), len)
     }
+}
+
+pub fn error_at(num: usize, msg: &str) -> ! {
+    let input = CURRENT_INPUT.get().unwrap();
+    println!("{}", input);
+    print!("{:width$}^ ", "", width = num);
+    println!("{}", msg);
+    exit(1);
 }
