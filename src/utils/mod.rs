@@ -20,6 +20,11 @@ pub fn parse_number(s: &str) -> (i32, usize) {
     }
 }
 
+pub fn error(msg: &str) -> ! {
+    println!("{}", msg);
+    exit(1);
+}
+
 pub fn error_at(num: usize, msg: &str) -> ! {
     let input = CURRENT_INPUT.get().unwrap();
     println!("{}", input);
