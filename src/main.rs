@@ -6,8 +6,8 @@ use core::{
     token::{TokenKind, tokenize},
 };
 use once_cell::sync::OnceCell;
-use std::{env, process::exit};
-use utils::error_at;
+use std::env;
+use utils::{error, error_at};
 
 pub static CURRENT_INPUT: OnceCell<String> = OnceCell::new();
 
@@ -31,8 +31,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 2 {
-        eprintln!("{}: invalid number of arguments", args[0]);
-        exit(1);
+        error(&format!("{} : invalid number of arguments", args[0]));
     }
 
     CURRENT_INPUT.set(args[1].clone()).unwrap();
