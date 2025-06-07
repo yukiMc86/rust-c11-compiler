@@ -1,6 +1,19 @@
 use crate::chibicch::{Node, NodeKind, Token, TokenKind};
 use crate::utils::error_at;
 
+// stmt = expr-stmt
+fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
+    expr_stmt(token)
+}
+
+// expr-stmt = expr ";"
+fn expr_stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
+    let (left_node, next_token) = expr(token);
+    let node = Node::new_unary(NodeKind::ExprStmt, left_node);
+    let next_token = next_token.skip(";");
+    return (node, next_token);
+}
+
 // expr = equality
 fn expr(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     return equality(token);
@@ -166,10 +179,23 @@ fn primary(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     error_at(token.location, "expected an expression");
 }
 
-pub fn parse(token: Box<Token>) -> Box<Node> {
-    let (node, next_token) = expr(token);
-    if next_token.kind != TokenKind::EOF {
-        error_at(next_token.location, "extra token");
+pub fn parse(mut token: Box<Token>) -> Box<Node> {
+    let mut head = Node {
+        kind: NodeKind::Empty,
+        next: None,
+        val: None,
+        lhs: None,
+        rhs: None,
+    };
+
+    let mut current = &mut head;
+
+    while token.kind != TokenKind::EOF {
+        let (node, next_token) = stmt(token);
+        current.next = Some(node);
+        current = current.next_mut();
+        token = next_token;
     }
-    node
+
+    head.next()
 }

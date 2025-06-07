@@ -19,21 +19,24 @@ pub struct Token {
 
 #[derive(PartialEq)]
 pub enum NodeKind {
-    Add, // +
-    Sub, // -
-    Mul, // *
-    Div, // /
-    Neg, // Unary -
-    Eq,  // ==
-    Ne,  // !=
-    Lt,  // <
-    Le,  // <=
-    Num, // Integer
+    Empty,    // Empty node
+    Add,      // +
+    Sub,      // -
+    Mul,      // *
+    Div,      // /
+    Neg,      // Unary -
+    Eq,       // ==
+    Ne,       // !=
+    Lt,       // <
+    Le,       // <=
+    ExprStmt, // Expression statement
+    Num,      // Integer
 }
 
 /// AST node type
 pub struct Node {
     pub kind: NodeKind,
+    pub next: Option<Box<Node>>,
     pub val: Option<i32>,
     pub lhs: Option<Box<Node>>,
     pub rhs: Option<Box<Node>>,
@@ -51,17 +54,11 @@ impl Token {
     }
 
     pub fn next(self) -> Box<Token> {
-        match self.next {
-            Some(token) => token,
-            None => error("cannot call next on a non-empty token"),
-        }
+        self.next.unwrap()
     }
 
     pub fn next_mut(&mut self) -> &mut Box<Token> {
-        match self.next {
-            Some(ref mut token) => token,
-            None => error("cannot call next_mut on a non-empty token"),
-        }
+        self.next.as_mut().unwrap()
     }
 
     pub fn push(&mut self, token: Box<Token>) {
@@ -93,6 +90,7 @@ impl Node {
     pub fn new_binary(kind: NodeKind, lhs: Box<Node>, rhs: Box<Node>) -> Box<Node> {
         Box::new(Node {
             kind,
+            next: None,
             val: None,
             lhs: Some(lhs),
             rhs: Some(rhs),
@@ -102,6 +100,7 @@ impl Node {
     pub fn new_num(val: i32) -> Box<Node> {
         Box::new(Node {
             kind: NodeKind::Num,
+            next: None,
             val: Some(val),
             lhs: None,
             rhs: None,
@@ -111,9 +110,18 @@ impl Node {
     pub fn new_unary(kind: NodeKind, expr: Box<Node>) -> Box<Node> {
         Box::new(Node {
             kind,
+            next: None,
             val: None,
             lhs: Some(expr),
             rhs: None,
         })
+    }
+
+    pub fn next(self) -> Box<Node> {
+        self.next.unwrap()
+    }
+
+    pub fn next_mut(&mut self) -> &mut Box<Node> {
+        self.next.as_mut().unwrap()
     }
 }

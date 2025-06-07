@@ -59,12 +59,26 @@ fn gen_expr(node: Box<Node>) {
     }
 }
 
+fn gen_stmt(node: Box<Node>) -> Option<Box<Node>> {
+    match node.kind {
+        NodeKind::ExprStmt => {
+            gen_expr(node.lhs.unwrap());
+            node.next
+        }
+        _ => error("invalid statement"),
+    }
+}
+
 pub fn codegen(node: Box<Node>) {
     println!("  .global main");
     println!("main:");
 
-    gen_expr(node);
-    println!("  ret");
+    let mut stmt_node = Some(node);
 
-    assert!(unsafe { DEPTH } == 0);
+    while let Some(n) = stmt_node {
+        stmt_node = gen_stmt(n);
+        assert!(unsafe { DEPTH } == 0);
+    }
+
+    println!("  ret");
 }

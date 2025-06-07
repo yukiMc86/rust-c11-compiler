@@ -1,5 +1,24 @@
 use crate::chibicch::{Token, TokenKind};
-use crate::utils::{CURRENT_INPUT, error_at, parse_number};
+use crate::utils::{CURRENT_INPUT, error_at};
+
+fn parse_number(s: &str) -> (i32, usize) {
+    let mut chars = s.chars();
+    let mut len = 0;
+
+    while let Some(c) = chars.next() {
+        if c.is_ascii_digit() {
+            len += 1;
+        } else {
+            break;
+        }
+    }
+
+    if len == 0 {
+        (0, 0)
+    } else {
+        (s[..len].parse().unwrap(), len)
+    }
+}
 
 fn starts_with(input: &[char], pat: &str, pos: usize) -> bool {
     let pat_chars: Vec<char> = pat.chars().collect();
