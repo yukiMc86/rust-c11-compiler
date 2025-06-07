@@ -17,6 +17,20 @@ fn pop(str: &str) {
     }
 }
 
+// Compute the absolute address of a given node.
+// It's an error if a given node does not reside in memory.
+fn gen_addr(node: Box<Node>) {
+    match node.kind {
+        NodeKind::Var => {
+            let offset =
+                (node.name.as_ref().unwrap().chars().next().unwrap() as i32 - 'a' as i32) * 8;
+
+            println!("  lea {}(%rbp), %rax", -offset);
+        }
+        _ => error("not an lvalue"),
+    }
+}
+
 fn gen_expr(node: Box<Node>) {
     match node.kind {
         NodeKind::Neg => {
@@ -26,6 +40,19 @@ fn gen_expr(node: Box<Node>) {
         }
         NodeKind::Num => {
             println!("  mov ${}, %rax", node.val.unwrap());
+            return;
+        }
+        NodeKind::Var => {
+            gen_addr(node);
+            println!("  mov (%rax), %rax");
+            return;
+        }
+        NodeKind::Assign => {
+            gen_addr(node.lhs.unwrap());
+            push();
+            gen_expr(node.rhs.unwrap());
+            pop("%rdi");
+            println!("  mov %rax, (%rdi)");
             return;
         }
         _ => {}
@@ -73,6 +100,11 @@ pub fn codegen(node: Box<Node>) {
     println!("  .global main");
     println!("main:");
 
+    // Prologue
+    println!("  push %rbp");
+    println!("  mov %rsp, %rbp");
+    println!("  sub $208, %rsp");
+
     let mut stmt_node = Some(node);
 
     while let Some(n) = stmt_node {
@@ -80,5 +112,7 @@ pub fn codegen(node: Box<Node>) {
         assert!(unsafe { DEPTH } == 0);
     }
 
+    println!("  mov %rbp, %rsp");
+    println!("  pop %rbp");
     println!("  ret");
 }

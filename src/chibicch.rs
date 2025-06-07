@@ -3,6 +3,7 @@ use crate::utils::{error, error_at};
 #[derive(PartialEq)]
 pub enum TokenKind {
     Empty,
+    Ident, // Identifiers
     Punct,
     Num,
     EOF,
@@ -29,7 +30,9 @@ pub enum NodeKind {
     Ne,       // !=
     Lt,       // <
     Le,       // <=
+    Assign,   // =
     ExprStmt, // Expression statement
+    Var,      // Variable
     Num,      // Integer
 }
 
@@ -40,6 +43,7 @@ pub struct Node {
     pub val: Option<i32>,
     pub lhs: Option<Box<Node>>,
     pub rhs: Option<Box<Node>>,
+    pub name: Option<String>,
 }
 
 impl Token {
@@ -87,34 +91,40 @@ impl Token {
 }
 
 impl Node {
-    pub fn new_binary(kind: NodeKind, lhs: Box<Node>, rhs: Box<Node>) -> Box<Node> {
+    pub fn new(kind: NodeKind) -> Box<Node> {
         Box::new(Node {
             kind,
             next: None,
             val: None,
-            lhs: Some(lhs),
-            rhs: Some(rhs),
+            lhs: None,
+            rhs: None,
+            name: None,
         })
+    }
+
+    pub fn new_binary(kind: NodeKind, lhs: Box<Node>, rhs: Box<Node>) -> Box<Node> {
+        let mut node = Node::new(kind);
+        node.lhs = Some(lhs);
+        node.rhs = Some(rhs);
+        node
     }
 
     pub fn new_num(val: i32) -> Box<Node> {
-        Box::new(Node {
-            kind: NodeKind::Num,
-            next: None,
-            val: Some(val),
-            lhs: None,
-            rhs: None,
-        })
+        let mut node = Node::new(NodeKind::Num);
+        node.val = Some(val);
+        node
     }
 
     pub fn new_unary(kind: NodeKind, expr: Box<Node>) -> Box<Node> {
-        Box::new(Node {
-            kind,
-            next: None,
-            val: None,
-            lhs: Some(expr),
-            rhs: None,
-        })
+        let mut node = Node::new(kind);
+        node.lhs = Some(expr);
+        node
+    }
+
+    pub fn new_var(name: String) -> Box<Node> {
+        let mut node = Node::new(NodeKind::Var);
+        node.name = Some(name);
+        node
     }
 
     pub fn next(self) -> Box<Node> {

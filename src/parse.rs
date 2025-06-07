@@ -14,9 +14,24 @@ fn expr_stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     return (node, next_token);
 }
 
-// expr = equality
+// expr = assign
 fn expr(token: Box<Token>) -> (Box<Node>, Box<Token>) {
-    return equality(token);
+    return assign(token);
+}
+
+fn assign(token: Box<Token>) -> (Box<Node>, Box<Token>) {
+    let mut left_node: Box<Node>;
+    let mut next_token: Box<Token>;
+    (left_node, next_token) = equality(token);
+
+    if next_token.eq_punct("=") {
+        next_token = next_token.next();
+        let (right_node, token) = assign(next_token);
+        left_node = Node::new_binary(NodeKind::Assign, left_node, right_node);
+        next_token = token;
+    }
+
+    return (left_node, next_token);
 }
 
 // equality = relational ("==" relational | "!=" relational)*
@@ -158,7 +173,7 @@ fn unary(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     primary(token)
 }
 
-// primary = "(" expr ")" | num
+// primary = "(" expr ")" | ident | num
 fn primary(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     let node: Box<Node>;
     let mut next_token: Box<Token>;
@@ -167,6 +182,12 @@ fn primary(token: Box<Token>) -> (Box<Node>, Box<Token>) {
         next_token = token.next();
         (node, next_token) = expr(next_token);
         next_token = next_token.skip(")");
+        return (node, next_token);
+    }
+
+    if token.kind == TokenKind::Ident {
+        node = Node::new_var(token.string.clone().unwrap());
+        next_token = token.next();
         return (node, next_token);
     }
 
@@ -180,13 +201,7 @@ fn primary(token: Box<Token>) -> (Box<Node>, Box<Token>) {
 }
 
 pub fn parse(mut token: Box<Token>) -> Box<Node> {
-    let mut head = Node {
-        kind: NodeKind::Empty,
-        next: None,
-        val: None,
-        lhs: None,
-        rhs: None,
-    };
+    let mut head = Node::new(NodeKind::Empty);
 
     let mut current = &mut head;
 

@@ -72,6 +72,16 @@ pub fn tokenize(input: &str) -> Box<Token> {
             continue;
         }
 
+        // Identifier
+        if 'a' <= chars[pos] && chars[pos] <= 'z' {
+            current.push(Token::new_token(TokenKind::Ident, pos));
+            current = current.next_mut();
+            current.string = Some(chars[pos].to_string());
+            pos += 1;
+            continue;
+        }
+
+        // Punctuators
         let (punct, dis) = read_punct(&chars, pos);
         if dis > 0 {
             current.push(Token::new_token(TokenKind::Punct, pos));
