@@ -1,19 +1,42 @@
-use crate::utils::{error, error_at, parse_number};
+use crate::utils::{error, error_at};
 
 #[derive(PartialEq)]
 pub enum TokenKind {
     Empty,
-    Punctuators,
+    Punct,
     Num,
-    End,
+    EOF,
 }
 
+/// Token type
 pub struct Token {
     pub kind: TokenKind,
     pub num: Option<i32>,
     pub string: Option<String>,
     pub next: Option<Box<Token>>,
     pub location: usize,
+}
+
+#[derive(PartialEq)]
+pub enum NodeKind {
+    Add, // +
+    Sub, // -
+    Mul, // *
+    Div, // /
+    Neg, // Unary -
+    Eq,  // ==
+    Ne,  // !=
+    Lt,  // <
+    Le,  // <=
+    Num, // Integer
+}
+
+/// AST node type
+pub struct Node {
+    pub kind: NodeKind,
+    pub val: Option<i32>,
+    pub lhs: Option<Box<Node>>,
+    pub rhs: Option<Box<Node>>,
 }
 
 impl Token {
@@ -48,15 +71,8 @@ impl Token {
         }
     }
 
-    pub fn get_number(&self) -> i32 {
-        match self.kind {
-            TokenKind::Num => self.num.unwrap(),
-            _ => error_at(self.location, "expected a number"),
-        }
-    }
-
     pub fn eq_punct(&self, s: &str) -> bool {
-        if self.kind != TokenKind::Punctuators {
+        if self.kind != TokenKind::Punct {
             false
         } else if let Some(ref string) = self.string {
             string == s
@@ -73,38 +89,31 @@ impl Token {
     }
 }
 
-pub fn tokenize(input: &str) -> Box<Token> {
-    let mut head = Token::new_token(TokenKind::Empty, 0);
-    let mut current = &mut head;
-    let chars: Vec<char> = input.chars().collect();
-    let mut pos = 0;
-
-    while pos < input.len() {
-        if chars[pos].is_whitespace() {
-            pos += 1;
-            continue;
-        }
-
-        if chars[pos].is_ascii_digit() {
-            current.push(Token::new_token(TokenKind::Num, pos));
-            current = current.next_mut();
-            let (num, dis) = parse_number(&input[pos..]);
-            current.num = Some(num);
-            pos += dis;
-            continue;
-        }
-
-        if chars[pos].is_ascii_punctuation() {
-            current.push(Token::new_token(TokenKind::Punctuators, pos));
-            current = current.next_mut();
-            current.string = Some(chars[pos].to_string());
-            pos += 1;
-            continue;
-        }
-
-        error_at(pos, "invalid token");
+impl Node {
+    pub fn new_binary(kind: NodeKind, lhs: Box<Node>, rhs: Box<Node>) -> Box<Node> {
+        Box::new(Node {
+            kind,
+            val: None,
+            lhs: Some(lhs),
+            rhs: Some(rhs),
+        })
     }
 
-    current.push(Token::new_token(TokenKind::End, pos));
-    head.next()
+    pub fn new_num(val: i32) -> Box<Node> {
+        Box::new(Node {
+            kind: NodeKind::Num,
+            val: Some(val),
+            lhs: None,
+            rhs: None,
+        })
+    }
+
+    pub fn new_unary(kind: NodeKind, expr: Box<Node>) -> Box<Node> {
+        Box::new(Node {
+            kind,
+            val: None,
+            lhs: Some(expr),
+            rhs: None,
+        })
+    }
 }

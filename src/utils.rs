@@ -1,5 +1,7 @@
-use crate::CURRENT_INPUT;
+use once_cell::sync::OnceCell;
 use std::process::exit;
+
+pub static CURRENT_INPUT: OnceCell<String> = OnceCell::new();
 
 pub fn parse_number(s: &str) -> (i32, usize) {
     let mut chars = s.chars();
