@@ -49,6 +49,16 @@ fn read_punct(chars: &Vec<char>, pos: usize) -> (String, usize) {
     }
 }
 
+/// Returns true if c is valid as the first character of an identifier.
+fn is_ident1(c: char) -> bool {
+    ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_'
+}
+
+/// Returns true if c is valid as the subsequent character of an identifier.
+fn is_ident2(c: char) -> bool {
+    is_ident1(c) || ('0' <= c && c <= '9')
+}
+
 pub fn tokenize(input: &str) -> Box<Token> {
     CURRENT_INPUT.set(input.to_string()).unwrap();
 
@@ -73,11 +83,20 @@ pub fn tokenize(input: &str) -> Box<Token> {
         }
 
         // Identifier
-        if 'a' <= chars[pos] && chars[pos] <= 'z' {
+        if is_ident1(chars[pos]) {
             current.push(Token::new_token(TokenKind::Ident, pos));
-            current = current.next_mut();
-            current.string = Some(chars[pos].to_string());
+
+            let mut name = String::new();
+            name.push(chars[pos]);
             pos += 1;
+
+            while pos < input.len() && is_ident2(chars[pos]) {
+                name.push(chars[pos]);
+                pos += 1;
+            }
+
+            current = current.next_mut();
+            current.string = Some(name);
             continue;
         }
 

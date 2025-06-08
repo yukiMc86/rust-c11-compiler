@@ -1,5 +1,50 @@
-use crate::chibicch::{Node, NodeKind, Token, TokenKind};
+use crate::chibicch::{Function, Node, NodeKind, Obj, Token, TokenKind};
 use crate::utils::error_at;
+use std::sync::Mutex;
+
+/// All local variable instances created during parsing are
+///
+/// accumulated to this list.
+static LOCALS_VAR: Mutex<Option<Vec<Obj>>> = Mutex::new(None);
+
+fn new_locals_var() {
+    let mut locals = LOCALS_VAR.lock().unwrap();
+    *locals = Some(Vec::new());
+}
+
+fn push_local_var(var: Obj) {
+    let mut locals = LOCALS_VAR.lock().unwrap();
+    locals.as_mut().unwrap().push(var);
+}
+
+fn get_locals_var() -> Vec<Obj> {
+    let mut locals = LOCALS_VAR.lock().unwrap();
+    locals.take().unwrap()
+}
+
+fn get_offset() -> i32 {
+    let locals = LOCALS_VAR.lock().unwrap();
+    -(locals.as_ref().unwrap().len() as i32) * 8
+}
+
+fn find_var(name: &str) -> Option<Obj> {
+    let locals = LOCALS_VAR.lock().unwrap();
+    locals
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|&v| v.name == name)
+        .cloned()
+}
+
+/// Round up `n` to the nearest multiple of `align`. For instance,0
+///
+/// align_to(5, 8) returns 8 and align_to(11, 8) returns 16.
+fn align_to(align: i32) -> i32 {
+    let locals = LOCALS_VAR.lock().unwrap();
+    let offset = locals.as_ref().unwrap().len() as i32 * 8;
+    offset + (align - 1) / align * align
+}
 
 // stmt = expr-stmt
 fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
@@ -186,7 +231,22 @@ fn primary(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     }
 
     if token.kind == TokenKind::Ident {
-        node = Node::new_var(token.string.clone().unwrap());
+        let name = token.string.clone().unwrap();
+        let var: Obj;
+        if let Some(exist_var) = find_var(name.as_str()) {
+            var = Obj {
+                name,
+                offset: exist_var.offset,
+            };
+        } else {
+            var = Obj {
+                name,
+                offset: get_offset(),
+            };
+            push_local_var(var.clone());
+        }
+
+        node = Node::new_var(var);
         next_token = token.next();
         return (node, next_token);
     }
@@ -200,7 +260,9 @@ fn primary(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     error_at(token.location, "expected an expression");
 }
 
-pub fn parse(mut token: Box<Token>) -> Box<Node> {
+pub fn parse(mut token: Box<Token>) -> Function {
+    new_locals_var();
+
     let mut head = Node::new(NodeKind::Empty);
 
     let mut current = &mut head;
@@ -212,5 +274,12 @@ pub fn parse(mut token: Box<Token>) -> Box<Node> {
         token = next_token;
     }
 
-    head.next()
+    let stack_size = align_to(16);
+    let _locals = get_locals_var();
+
+    Function {
+        body: head.next(),
+        _locals,
+        stack_size,
+    }
 }

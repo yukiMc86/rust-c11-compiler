@@ -18,6 +18,24 @@ pub struct Token {
     pub location: usize,
 }
 
+//
+// parse.c
+//
+
+// Local variable
+#[derive(Clone)]
+pub struct Obj {
+    pub name: String, // Variable name
+    pub offset: i32,  // Offset from RBP
+}
+
+// Function
+pub struct Function {
+    pub body: Box<Node>,
+    pub _locals: Vec<Obj>,
+    pub stack_size: i32,
+}
+
 #[derive(PartialEq)]
 pub enum NodeKind {
     Empty,    // Empty node
@@ -38,12 +56,12 @@ pub enum NodeKind {
 
 /// AST node type
 pub struct Node {
-    pub kind: NodeKind,
-    pub next: Option<Box<Node>>,
-    pub val: Option<i32>,
-    pub lhs: Option<Box<Node>>,
-    pub rhs: Option<Box<Node>>,
-    pub name: Option<String>,
+    pub kind: NodeKind,          // Node kind
+    pub next: Option<Box<Node>>, // Next node
+    pub lhs: Option<Box<Node>>,  // Left-hand side
+    pub rhs: Option<Box<Node>>,  // Right-hand side
+    pub var: Option<Obj>,        // Used if kind == ND_VAR
+    pub num: Option<i32>,        // Used if kind == ND_NUM
 }
 
 impl Token {
@@ -95,10 +113,10 @@ impl Node {
         Box::new(Node {
             kind,
             next: None,
-            val: None,
             lhs: None,
             rhs: None,
-            name: None,
+            var: None,
+            num: None,
         })
     }
 
@@ -111,7 +129,7 @@ impl Node {
 
     pub fn new_num(val: i32) -> Box<Node> {
         let mut node = Node::new(NodeKind::Num);
-        node.val = Some(val);
+        node.num = Some(val);
         node
     }
 
@@ -121,9 +139,9 @@ impl Node {
         node
     }
 
-    pub fn new_var(name: String) -> Box<Node> {
+    pub fn new_var(var: Obj) -> Box<Node> {
         let mut node = Node::new(NodeKind::Var);
-        node.name = Some(name);
+        node.var = Some(var);
         node
     }
 

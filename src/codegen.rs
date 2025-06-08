@@ -1,4 +1,4 @@
-use crate::chibicch::{Node, NodeKind};
+use crate::chibicch::{Function, Node, NodeKind};
 use crate::utils::error;
 
 static mut DEPTH: i32 = 0;
@@ -22,10 +22,7 @@ fn pop(str: &str) {
 fn gen_addr(node: Box<Node>) {
     match node.kind {
         NodeKind::Var => {
-            let offset =
-                (node.name.as_ref().unwrap().chars().next().unwrap() as i32 - 'a' as i32) * 8;
-
-            println!("  lea {}(%rbp), %rax", -offset);
+            println!("  lea {}(%rbp), %rax", node.var.unwrap().offset);
         }
         _ => error("not an lvalue"),
     }
@@ -39,7 +36,7 @@ fn gen_expr(node: Box<Node>) {
             return;
         }
         NodeKind::Num => {
-            println!("  mov ${}, %rax", node.val.unwrap());
+            println!("  mov ${}, %rax", node.num.unwrap());
             return;
         }
         NodeKind::Var => {
@@ -96,16 +93,16 @@ fn gen_stmt(node: Box<Node>) -> Option<Box<Node>> {
     }
 }
 
-pub fn codegen(node: Box<Node>) {
+pub fn codegen(prog: Function) {
     println!("  .global main");
     println!("main:");
 
     // Prologue
     println!("  push %rbp");
     println!("  mov %rsp, %rbp");
-    println!("  sub $208, %rsp");
+    println!("  sub ${}, %rsp\n", prog.stack_size);
 
-    let mut stmt_node = Some(node);
+    let mut stmt_node = Some(prog.body);
 
     while let Some(n) = stmt_node {
         stmt_node = gen_stmt(n);
