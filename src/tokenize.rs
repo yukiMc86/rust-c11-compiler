@@ -59,6 +59,15 @@ fn is_ident2(c: char) -> bool {
     is_ident1(c) || ('0' <= c && c <= '9')
 }
 
+fn convert_keywords(mut token: &mut Box<Token>) {
+    while token.kind != TokenKind::EOF {
+        if token.eq_punct("return") {
+            token.kind = TokenKind::Keywords
+        }
+        token = token.next_mut();
+    }
+}
+
 pub fn tokenize(input: &str) -> Box<Token> {
     CURRENT_INPUT.set(input.to_string()).unwrap();
 
@@ -82,7 +91,7 @@ pub fn tokenize(input: &str) -> Box<Token> {
             continue;
         }
 
-        // Identifier
+        // Identifier or keyword
         if is_ident1(chars[pos]) {
             current.push(Token::new_token(TokenKind::Ident, pos));
 
@@ -114,5 +123,6 @@ pub fn tokenize(input: &str) -> Box<Token> {
     }
 
     current.push(Token::new_token(TokenKind::EOF, pos));
+    convert_keywords(head.next_mut());
     head.next()
 }

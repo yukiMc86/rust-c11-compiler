@@ -48,15 +48,20 @@ fn align_to(align: i32) -> i32 {
 
 // stmt = expr-stmt
 fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
+    if token.eq_punct("return") {
+        let (expr_node, next_token) = expr(token.next());
+        let node = Node::new_unary(NodeKind::Return, expr_node);
+        return (node, next_token.skip(";"));
+    }
+
     expr_stmt(token)
 }
 
 // expr-stmt = expr ";"
 fn expr_stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
-    let (left_node, next_token) = expr(token);
-    let node = Node::new_unary(NodeKind::ExprStmt, left_node);
-    let next_token = next_token.skip(";");
-    return (node, next_token);
+    let (expr_node, next_token) = expr(token);
+    let node = Node::new_unary(NodeKind::ExprStmt, expr_node);
+    return (node, next_token.skip(";"));
 }
 
 // expr = assign

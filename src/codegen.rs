@@ -89,6 +89,11 @@ fn gen_stmt(node: Box<Node>) -> Option<Box<Node>> {
             gen_expr(node.lhs.unwrap());
             node.next
         }
+        NodeKind::Return => {
+            gen_expr(node.lhs.unwrap());
+            println!("  jmp .L.return");
+            node.next
+        }
         _ => error("invalid statement"),
     }
 }
@@ -109,6 +114,7 @@ pub fn codegen(prog: Function) {
         assert!(unsafe { DEPTH } == 0);
     }
 
+    println!(".L.return:");
     println!("  mov %rbp, %rsp");
     println!("  pop %rbp");
     println!("  ret");

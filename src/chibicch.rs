@@ -3,10 +3,11 @@ use crate::utils::{error, error_at};
 #[derive(PartialEq)]
 pub enum TokenKind {
     Empty,
-    Ident, // Identifiers
-    Punct,
-    Num,
-    EOF,
+    Ident,    // Identifiers
+    Keywords, // Keywords
+    Punct,    // Punctuators
+    Num,      // Numeric literals
+    EOF,      // End-of-file markers
 }
 
 /// Token type
@@ -49,6 +50,7 @@ pub enum NodeKind {
     Lt,       // <
     Le,       // <=
     Assign,   // =
+    Return,   // "return"
     ExprStmt, // Expression statement
     Var,      // Variable
     Num,      // Integer
@@ -91,9 +93,7 @@ impl Token {
     }
 
     pub fn eq_punct(&self, s: &str) -> bool {
-        if self.kind != TokenKind::Punct {
-            false
-        } else if let Some(ref string) = self.string {
+        if let Some(ref string) = self.string {
             string == s
         } else {
             false
