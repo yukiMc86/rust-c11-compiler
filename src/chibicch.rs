@@ -51,6 +51,7 @@ pub enum NodeKind {
     Le,       // <=
     Assign,   // =
     Return,   // "return"
+    Block,    // { ... }
     ExprStmt, // Expression statement
     Var,      // Variable
     Num,      // Integer
@@ -62,6 +63,7 @@ pub struct Node {
     pub next: Option<Box<Node>>, // Next node
     pub lhs: Option<Box<Node>>,  // Left-hand side
     pub rhs: Option<Box<Node>>,  // Right-hand side
+    pub body: Option<Box<Node>>, // Block
     pub var: Option<Obj>,        // Used if kind == ND_VAR
     pub num: Option<i32>,        // Used if kind == ND_NUM
 }
@@ -115,6 +117,7 @@ impl Node {
             next: None,
             lhs: None,
             rhs: None,
+            body: None,
             var: None,
             num: None,
         })

@@ -1,20 +1,17 @@
 use crate::chibicch::{Function, Node, NodeKind};
 use crate::utils::error;
+use std::sync::Mutex;
 
-static mut DEPTH: i32 = 0;
+static DEPTH: Mutex<i32> = Mutex::new(0);
 
 fn push() {
-    unsafe {
-        DEPTH += 1;
-        println!("  push %rax");
-    }
+    *DEPTH.lock().unwrap() += 1;
+    println!("  push %rax");
 }
 
 fn pop(str: &str) {
-    unsafe {
-        DEPTH -= 1;
-        println!("  pop {}", str);
-    }
+    *DEPTH.lock().unwrap() -= 1;
+    println!("  pop {}", str);
 }
 
 // Compute the absolute address of a given node.
@@ -94,6 +91,13 @@ fn gen_stmt(node: Box<Node>) -> Option<Box<Node>> {
             println!("  jmp .L.return");
             node.next
         }
+        NodeKind::Block => {
+            let mut stmt_node = node.body;
+            while let Some(n) = stmt_node {
+                stmt_node = gen_stmt(n);
+            }
+            node.next
+        }
         _ => error("invalid statement"),
     }
 }
@@ -107,12 +111,9 @@ pub fn codegen(prog: Function) {
     println!("  mov %rsp, %rbp");
     println!("  sub ${}, %rsp\n", prog.stack_size);
 
-    let mut stmt_node = Some(prog.body);
+    gen_stmt(prog.body);
 
-    while let Some(n) = stmt_node {
-        stmt_node = gen_stmt(n);
-        assert!(unsafe { DEPTH } == 0);
-    }
+    assert!(*DEPTH.lock().unwrap() == 0);
 
     println!(".L.return:");
     println!("  mov %rbp, %rsp");

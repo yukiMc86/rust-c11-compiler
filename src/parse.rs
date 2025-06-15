@@ -46,7 +46,9 @@ fn align_to(align: i32) -> i32 {
     offset + (align - 1) / align * align
 }
 
-// stmt = expr-stmt
+/// stmt = "return" expr ";"
+///      | "{" compound-stmt
+///      | expr-stmt
 fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     if token.eq_punct("return") {
         let (expr_node, next_token) = expr(token.next());
@@ -54,7 +56,31 @@ fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
         return (node, next_token.skip(";"));
     }
 
+    if token.eq_punct("{") {
+        return compound_stmt(token.next());
+    }
+
     expr_stmt(token)
+}
+
+/// compound-stmt = stmt* "}"
+fn compound_stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
+    let mut head = Node::new(NodeKind::Empty);
+    let mut current = &mut head;
+
+    let mut next_token = token;
+    let mut expr_node: Box<Node>;
+    while !(&next_token).eq_punct("}") {
+        (expr_node, next_token) = stmt(next_token);
+        current.next = Some(expr_node);
+        current = current.next_mut();
+    }
+
+    let mut node = Node::new(NodeKind::Block);
+    node.body = Some(head.next());
+    next_token = next_token.next(); // Skip the closing brace '}'
+
+    (node, next_token)
 }
 
 // expr-stmt = expr ";"
@@ -266,24 +292,17 @@ fn primary(token: Box<Token>) -> (Box<Node>, Box<Token>) {
 }
 
 pub fn parse(mut token: Box<Token>) -> Function {
+    token = token.skip("{");
+
     new_locals_var();
 
-    let mut head = Node::new(NodeKind::Empty);
-
-    let mut current = &mut head;
-
-    while token.kind != TokenKind::EOF {
-        let (node, next_token) = stmt(token);
-        current.next = Some(node);
-        current = current.next_mut();
-        token = next_token;
-    }
+    let body = compound_stmt(token).0;
 
     let stack_size = align_to(16);
     let _locals = get_locals_var();
 
     Function {
-        body: head.next(),
+        body,
         _locals,
         stack_size,
     }
