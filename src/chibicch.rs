@@ -51,6 +51,7 @@ pub enum NodeKind {
     Le,       // <=
     Assign,   // =
     Return,   // "return"
+    If,       // "if"
     Block,    // { ... }
     ExprStmt, // Expression statement
     Var,      // Variable
@@ -58,11 +59,19 @@ pub enum NodeKind {
 }
 
 /// AST node type
+#[derive(Default)]
 pub struct Node {
     pub kind: NodeKind,          // Node kind
     pub next: Option<Box<Node>>, // Next node
-    pub lhs: Option<Box<Node>>,  // Left-hand side
-    pub rhs: Option<Box<Node>>,  // Right-hand side
+
+    pub lhs: Option<Box<Node>>, // Left-hand side
+    pub rhs: Option<Box<Node>>, // Right-hand side
+
+    // "if" statement
+    pub cond: Option<Box<Node>>, // Condition
+    pub then: Option<Box<Node>>, // Then branch
+    pub els: Option<Box<Node>>,  // Else branch
+
     pub body: Option<Box<Node>>, // Block
     pub var: Option<Obj>,        // Used if kind == ND_VAR
     pub num: Option<i32>,        // Used if kind == ND_NUM
@@ -114,12 +123,7 @@ impl Node {
     pub fn new(kind: NodeKind) -> Box<Node> {
         Box::new(Node {
             kind,
-            next: None,
-            lhs: None,
-            rhs: None,
-            body: None,
-            var: None,
-            num: None,
+            ..Default::default()
         })
     }
 
@@ -154,5 +158,11 @@ impl Node {
 
     pub fn next_mut(&mut self) -> &mut Box<Node> {
         self.next.as_mut().unwrap()
+    }
+}
+
+impl Default for NodeKind {
+    fn default() -> Self {
+        NodeKind::Empty
     }
 }

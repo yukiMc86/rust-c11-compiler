@@ -47,6 +47,7 @@ fn align_to(align: i32) -> i32 {
 }
 
 /// stmt = "return" expr ";"
+///      | "if" "(" expr ")" stmt ("else" stmt)?
 ///      | "{" compound-stmt
 ///      | expr-stmt
 fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
@@ -54,6 +55,26 @@ fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
         let (expr_node, next_token) = expr(token.next());
         let node = Node::new_unary(NodeKind::Return, expr_node);
         return (node, next_token.skip(";"));
+    }
+
+    if token.eq_punct("if") {
+        let mut node = Node::new(NodeKind::If);
+
+        let next_token = token.next().skip("(");
+        let (cond_node, next_token) = expr(next_token);
+        let next_token = next_token.skip(")");
+        let (then_node, next_token) = stmt(next_token);
+
+        node.cond = Some(cond_node);
+        node.then = Some(then_node);
+
+        if next_token.eq_punct("else") {
+            let (else_node, next_token) = stmt(next_token.next());
+            node.els = Some(else_node);
+            return (node, next_token);
+        }
+
+        return (node, next_token);
     }
 
     if token.eq_punct("{") {

@@ -59,9 +59,14 @@ fn is_ident2(c: char) -> bool {
     is_ident1(c) || ('0' <= c && c <= '9')
 }
 
+fn is_keyword(s: &str) -> bool {
+    ["return", "if", "else"].contains(&s)
+}
+
 fn convert_keywords(mut token: &mut Box<Token>) {
     while token.kind != TokenKind::EOF {
-        if token.eq_punct("return") {
+        let token_string = token.string.as_ref();
+        if token_string.is_some() && is_keyword(token_string.unwrap()) {
             token.kind = TokenKind::Keywords
         }
         token = token.next_mut();

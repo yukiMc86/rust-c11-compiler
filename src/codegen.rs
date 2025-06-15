@@ -1,16 +1,21 @@
 use crate::chibicch::{Function, Node, NodeKind};
 use crate::utils::error;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicI32, Ordering};
 
-static DEPTH: Mutex<i32> = Mutex::new(0);
+static DEPTH: AtomicI32 = AtomicI32::new(0);
+
+fn count() -> i32 {
+    static I: AtomicI32 = AtomicI32::new(1);
+    I.fetch_add(1, Ordering::SeqCst)
+}
 
 fn push() {
-    *DEPTH.lock().unwrap() += 1;
+    DEPTH.fetch_add(1, Ordering::SeqCst);
     println!("  push %rax");
 }
 
 fn pop(str: &str) {
-    *DEPTH.lock().unwrap() -= 1;
+    DEPTH.fetch_sub(1, Ordering::SeqCst);
     println!("  pop {}", str);
 }
 
@@ -80,23 +85,35 @@ fn gen_expr(node: Box<Node>) {
     }
 }
 
-fn gen_stmt(node: Box<Node>) -> Option<Box<Node>> {
+fn gen_stmt(node: Box<Node>) {
     match node.kind {
         NodeKind::ExprStmt => {
             gen_expr(node.lhs.unwrap());
-            node.next
         }
         NodeKind::Return => {
             gen_expr(node.lhs.unwrap());
             println!("  jmp .L.return");
-            node.next
         }
         NodeKind::Block => {
             let mut stmt_node = node.body;
-            while let Some(n) = stmt_node {
-                stmt_node = gen_stmt(n);
+            while let Some(mut n) = stmt_node {
+                stmt_node = n.next.take();
+                gen_stmt(n);
             }
-            node.next
+        }
+        NodeKind::If => {
+            let c = count();
+
+            gen_expr(node.cond.unwrap());
+            println!("  cmp $0, %rax");
+            println!("  je .L.else.{}", c);
+            gen_stmt(node.then.unwrap());
+            println!("  jmp .L.end.{}", c);
+            println!(".L.else.{}:", c);
+            if let Some(els) = node.els {
+                gen_stmt(els);
+            }
+            println!(".L.end.{}:", c);
         }
         _ => error("invalid statement"),
     }
@@ -113,7 +130,7 @@ pub fn codegen(prog: Function) {
 
     gen_stmt(prog.body);
 
-    assert!(*DEPTH.lock().unwrap() == 0);
+    assert!(DEPTH.load(Ordering::SeqCst) == 0);
 
     println!(".L.return:");
     println!("  mov %rbp, %rsp");
