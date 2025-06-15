@@ -24,7 +24,7 @@ fn get_locals_var() -> Vec<Obj> {
 
 fn get_offset() -> i32 {
     let locals = LOCALS_VAR.lock().unwrap();
-    -(locals.as_ref().unwrap().len() as i32) * 8
+    -(locals.as_ref().unwrap().len() as i32 + 1) * 8
 }
 
 fn find_var(name: &str) -> Option<Obj> {
@@ -48,6 +48,7 @@ fn align_to(align: i32) -> i32 {
 
 /// stmt = "return" expr ";"
 ///      | "if" "(" expr ")" stmt ("else" stmt)?
+///      | "for" "(" expr-stmt expr? ";" expr? ")" stmt
 ///      | "{" compound-stmt
 ///      | expr-stmt
 fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
@@ -73,6 +74,34 @@ fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
             node.els = Some(else_node);
             return (node, next_token);
         }
+
+        return (node, next_token);
+    }
+
+    if token.eq_punct("for") {
+        let mut node = Node::new(NodeKind::For);
+        let mut post_token = token.next().skip("(");
+
+        let (init_node, next_token) = expr_stmt(post_token);
+        node.init = Some(init_node);
+        post_token = next_token;
+
+        if !post_token.eq_punct(";") {
+            let (cond_node, next_token) = expr(post_token);
+            node.cond = Some(cond_node);
+            post_token = next_token;
+        }
+        post_token = post_token.skip(";");
+
+        if !post_token.eq_punct(")") {
+            let (inc_node, next_token) = expr(post_token);
+            node.inc = Some(inc_node);
+            post_token = next_token;
+        }
+        post_token = post_token.skip(")");
+
+        let (then_node, next_token) = stmt(post_token);
+        node.then = Some(then_node);
 
         return (node, next_token);
     }
@@ -115,7 +144,7 @@ fn expr_stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     return (node, next_token.skip(";"));
 }
 
-// expr = assign
+/// expr = assign
 fn expr(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     return assign(token);
 }
@@ -288,19 +317,17 @@ fn primary(token: Box<Token>) -> (Box<Node>, Box<Token>) {
 
     if token.kind == TokenKind::Ident {
         let name = token.string.clone().unwrap();
-        let var: Obj;
-        if let Some(exist_var) = find_var(name.as_str()) {
-            var = Obj {
-                name,
-                offset: exist_var.offset,
-            };
+
+        let var = if let Some(exist_var) = find_var(name.as_str()) {
+            exist_var
         } else {
-            var = Obj {
+            let var = Obj {
                 name,
                 offset: get_offset(),
             };
             push_local_var(var.clone());
-        }
+            var
+        };
 
         node = Node::new_var(var);
         next_token = token.next();

@@ -115,6 +115,26 @@ fn gen_stmt(node: Box<Node>) {
             }
             println!(".L.end.{}:", c);
         }
+        NodeKind::For => {
+            let c = count();
+            gen_stmt(node.init.unwrap());
+            println!(".L.begin.{}:", c);
+
+            if let Some(cond) = node.cond {
+                gen_expr(cond);
+                println!("  cmp $0, %rax");
+                println!("  je .L.end.{}", c);
+            }
+
+            gen_stmt(node.then.unwrap());
+
+            if let Some(inc) = node.inc {
+                gen_expr(inc);
+            }
+
+            println!("  jmp .L.begin.{}", c);
+            println!(".L.end.{}:", c);
+        }
         _ => error("invalid statement"),
     }
 }

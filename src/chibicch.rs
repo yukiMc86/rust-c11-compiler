@@ -52,6 +52,7 @@ pub enum NodeKind {
     Assign,   // =
     Return,   // "return"
     If,       // "if"
+    For,      // "for"
     Block,    // { ... }
     ExprStmt, // Expression statement
     Var,      // Variable
@@ -67,10 +68,12 @@ pub struct Node {
     pub lhs: Option<Box<Node>>, // Left-hand side
     pub rhs: Option<Box<Node>>, // Right-hand side
 
-    // "if" statement
+    // "if" or "for" statement
     pub cond: Option<Box<Node>>, // Condition
     pub then: Option<Box<Node>>, // Then branch
     pub els: Option<Box<Node>>,  // Else branch
+    pub init: Option<Box<Node>>,
+    pub inc: Option<Box<Node>>,
 
     pub body: Option<Box<Node>>, // Block
     pub var: Option<Obj>,        // Used if kind == ND_VAR
