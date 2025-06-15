@@ -83,8 +83,12 @@ fn compound_stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
     (node, next_token)
 }
 
-// expr-stmt = expr ";"
+/// expr-stmt = expr? ";"
 fn expr_stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
+    if (&token).eq_punct(";") {
+        return (Node::new(NodeKind::Block), token.next());
+    }
+
     let (expr_node, next_token) = expr(token);
     let node = Node::new_unary(NodeKind::ExprStmt, expr_node);
     return (node, next_token.skip(";"));
