@@ -117,7 +117,10 @@ fn gen_stmt(node: Box<Node>) {
         }
         NodeKind::For => {
             let c = count();
-            gen_stmt(node.init.unwrap());
+
+            if let Some(init) = node.init {
+                gen_stmt(init);
+            }
             println!(".L.begin.{}:", c);
 
             if let Some(cond) = node.cond {

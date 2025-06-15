@@ -52,7 +52,7 @@ pub enum NodeKind {
     Assign,   // =
     Return,   // "return"
     If,       // "if"
-    For,      // "for"
+    For,      // "for" or "while"
     Block,    // { ... }
     ExprStmt, // Expression statement
     Var,      // Variable

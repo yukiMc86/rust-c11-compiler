@@ -49,6 +49,7 @@ fn align_to(align: i32) -> i32 {
 /// stmt = "return" expr ";"
 ///      | "if" "(" expr ")" stmt ("else" stmt)?
 ///      | "for" "(" expr-stmt expr? ";" expr? ")" stmt
+///      | "while" "(" expr ")" stmt
 ///      | "{" compound-stmt
 ///      | expr-stmt
 fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
@@ -99,6 +100,20 @@ fn stmt(token: Box<Token>) -> (Box<Node>, Box<Token>) {
             post_token = next_token;
         }
         post_token = post_token.skip(")");
+
+        let (then_node, next_token) = stmt(post_token);
+        node.then = Some(then_node);
+
+        return (node, next_token);
+    }
+
+    if token.eq_punct("while") {
+        let mut node = Node::new(NodeKind::For);
+        let mut post_token = token.next().skip("(");
+
+        let (cond_node, next_token) = expr(post_token);
+        node.cond = Some(cond_node);
+        post_token = next_token.skip(")");
 
         let (then_node, next_token) = stmt(post_token);
         node.then = Some(then_node);

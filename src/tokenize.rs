@@ -60,7 +60,7 @@ fn is_ident2(c: char) -> bool {
 }
 
 fn is_keyword(s: &str) -> bool {
-    ["return", "if", "else", "for"].contains(&s)
+    ["return", "if", "else", "for", "while"].contains(&s)
 }
 
 fn convert_keywords(mut token: &mut Box<Token>) {
