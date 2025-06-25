@@ -1,4 +1,8 @@
 use crate::utils::{error, error_at};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+type OptRcRef<T> = Option<Rc<RefCell<T>>>;
 
 #[derive(PartialEq)]
 pub enum TokenKind {

@@ -1,5 +1,5 @@
-mod chibicch;
 mod codegen;
+mod core;
 mod parse;
 mod tokenize;
 mod utils;

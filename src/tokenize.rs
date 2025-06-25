@@ -1,4 +1,4 @@
-use crate::chibicch::{Token, TokenKind};
+use crate::core::{Token, TokenKind};
 use crate::utils::{CURRENT_INPUT, error_at};
 
 fn parse_number(s: &str) -> (i32, usize) {

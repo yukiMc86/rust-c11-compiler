@@ -1,4 +1,4 @@
-use crate::chibicch::{Function, Node, NodeKind, Obj, Token, TokenKind};
+use crate::core::{Function, Node, NodeKind, Obj, Token, TokenKind};
 use crate::utils::error_at;
 use std::sync::Mutex;
 

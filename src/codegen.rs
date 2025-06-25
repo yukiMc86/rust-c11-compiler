@@ -1,4 +1,4 @@
-use crate::chibicch::{Function, Node, NodeKind};
+use crate::core::{Function, Node, NodeKind};
 use crate::utils::error;
 use std::sync::atomic::{AtomicI32, Ordering};
 
